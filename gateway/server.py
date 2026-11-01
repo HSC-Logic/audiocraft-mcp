@@ -94,6 +94,10 @@ class StaticBearerAuth:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http" and scope["path"] == "/mcp":
+            # Serve /mcp directly. Starlette would 307 to http://host/mcp/ (the tunnel hides
+            # the original https scheme), and clients drop Authorization on that redirect.
+            scope = {**scope, "path": "/mcp/", "raw_path": b"/mcp/"}
         if scope["type"] == "http" and scope["path"] != "/healthz":
             headers = [value for key, value in scope["headers"] if key.lower() == b"authorization"]
             expected = b"Bearer " + scope["app"].state.gateway_token.encode("ascii")

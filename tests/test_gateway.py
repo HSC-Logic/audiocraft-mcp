@@ -120,8 +120,15 @@ class GatewayTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual((await self.client.get(path, headers=headers)).status_code, 401)
         duplicate = [("Authorization", f"Bearer {TOKEN}"), ("Authorization", f"Bearer {TOKEN}")]
         self.assertEqual((await self.client.get("/mcp", headers=duplicate)).status_code, 401)
-        response = await self.client.get("/mcp", headers={"Authorization": f"Bearer {TOKEN}"})
-        self.assertEqual(response.status_code, 307)
+        # /mcp is served directly: a 307 to http://host/mcp/ (scheme lost behind the tunnel)
+        # makes clients drop Authorization, which broke the Cloudflare MCP portal.
+        auth = {"Authorization": f"Bearer {TOKEN}", "Accept": "application/json, text/event-stream"}
+        body = {"jsonrpc": "2.0", "id": 1, "method": "tools/list"}
+        for path in ("/mcp", "/mcp/"):
+            response = await self.client.post(path, headers=auth, json=body)
+            self.assertEqual(response.status_code, 200, path)
+            self.assertIn("generate_music", response.text)
+            self.assertNotIn("location", response.headers)
         self.assertEqual((await self.client.get("/healthz")).json(), {"gateway": "ok", "upstream": "ok"})
 
     async def test_sdk_lifecycle_tools_and_artifact(self):
