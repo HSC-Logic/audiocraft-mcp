@@ -51,7 +51,12 @@ services:
     environment:
       WORKER_URL: http://inference:8001
       OUTPUT_DIR: /data
-      PUBLIC_BASE_URL: http://127.0.0.1:8000
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://127.0.0.1:8000}
+      # Exact Host/Origin allowlist (DNS-rebinding protection). Loopback is always allowed.
+      # Add the tunnel hostname when exposing through Cloudflare, for example
+      # MCP_ALLOWED_HOSTS=audiocraft-mcp.buddylabs.site
+      MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-}
+      MCP_ALLOWED_ORIGINS: ${MCP_ALLOWED_ORIGINS:-}
       WORKER_TOKEN_FILE: /run/secrets/worker_token
       MCP_TOKEN_FILE: /run/secrets/mcp_token
     secrets:

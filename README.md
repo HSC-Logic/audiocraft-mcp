@@ -11,7 +11,7 @@ Project-authored glue: Apache-2.0. AudioCraft source: MIT. Model weights: CC-BY-
 ## Requirements
 
 - Docker Desktop with Linux containers and WSL2 GPU support on Windows; recent NVIDIA Windows driver. Linux requires Docker Compose and NVIDIA Container Toolkit.
-- Target hardware: RTX 4060 Ti 16 GB. CUDA 12.1 / Torch 2.1.0 container GPU detection and a GPU tensor calculation were verified on this host. End-to-end model generation and performance remain unverified until model smoke tests pass. Docker Engine 29.9.2 alone does not prove GPU support.
+- Target hardware: RTX 4060 Ti 16 GB. CUDA 12.1 / Torch 2.1.0 container GPU detection and a GPU tensor calculation were verified on this host. `scripts/smoke.py` passed on this host: 1 s MusicGen and 1 s AudioGen clips were generated through authenticated MCP and downloaded as valid WAVs (structure only, no audio-quality claim). Peak VRAM and throughput are not measured. First use downloads about 8 GB of model weights (MusicGen small, AudioGen medium, plus a T5-large text encoder), so expect the first AudioGen job to take several minutes. Docker Engine 29.9.2 alone does not prove GPU support.
 - Internet access for image builds and initial model downloads; sufficient disk for image layers and model cache.
 - Other GPU workloads, including Ollama, compete for VRAM. Do not stop unrelated services automatically. Inspect GPU usage and arrange capacity before generation.
 
