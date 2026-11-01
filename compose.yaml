@@ -1,0 +1,86 @@
+name: audiocraft-mcp
+services:
+  inference:
+    image: audiocraft-mcp-inference:local
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    user: "10001:10001"
+    init: true
+    restart: unless-stopped
+    environment:
+      ACCEPT_NONCOMMERCIAL_MODELS: ${ACCEPT_NONCOMMERCIAL_MODELS:-false}
+      OUTPUT_DIR: /data
+      HF_HOME: /models/huggingface
+      TORCH_HOME: /models/torch
+      AUDIOCRAFT_CACHE_DIR: /models/audiocraft
+      WORKER_TOKEN_FILE: /run/secrets/worker_token
+      MAX_OUTPUT_BYTES: "1073741824"
+      ARTIFACT_TTL_SECONDS: "86400"
+    secrets:
+      - worker_token
+    volumes:
+      - outputs:/data
+      - models:/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/healthz', timeout=5).close()"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+  gateway:
+    image: audiocraft-mcp-gateway:local
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    user: "10001:10001"
+    init: true
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      WORKER_URL: http://inference:8001
+      OUTPUT_DIR: /data
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://127.0.0.1:8000}
+      # Exact Host/Origin allowlist (DNS-rebinding protection). Loopback is always allowed.
+      # Add the tunnel hostname when exposing through Cloudflare, for example
+      # MCP_ALLOWED_HOSTS=audiocraft-mcp.buddylabs.site
+      MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-}
+      MCP_ALLOWED_ORIGINS: ${MCP_ALLOWED_ORIGINS:-}
+      WORKER_TOKEN_FILE: /run/secrets/worker_token
+      MCP_TOKEN_FILE: /run/secrets/mcp_token
+    secrets:
+      - worker_token
+      - mcp_token
+    volumes:
+      - outputs:/data:ro
+    depends_on:
+      inference:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=5).close()"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+secrets:
+  worker_token:
+    file: ./.secrets/worker_token
+  mcp_token:
+    file: ./.secrets/mcp_token
+volumes:
+  outputs:
+  models:
