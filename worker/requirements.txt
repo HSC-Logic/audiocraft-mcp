@@ -1,0 +1,27 @@
+# audiocraft==1.3.0 runtime dependencies, installed separately with --no-deps (see Dockerfile).
+# Deliberate deviation: upstream pins av==11.0.0, which has no Python 3.10 wheel and does not
+# compile against this image's FFmpeg headers. av 12.0.0 ships a binary wheel.
+av==12.0.0
+einops
+flashy>=0.0.1
+hydra-core>=1.1
+hydra_colorlog
+julius
+num2words
+numpy
+sentencepiece
+spacy>=3.6.1
+torch==2.1.0
+torchaudio<2.1.2,>=2.0.0
+huggingface_hub
+tqdm
+transformers>=4.31.0
+xformers<0.0.23
+demucs
+librosa
+gradio
+torchmetrics
+encodec
+protobuf
+torchvision==0.16.0
+torchtext==0.16.0
